@@ -53,8 +53,6 @@ public final class RestaurantServerState implements Serializable {
                 errorRate = 0.0;
             }
 
-            errorRate = 0.1;
-
             ReplicaServer replica = new BasicReplicaServer(errorRate);
             ReplicaServer replicaStub = (ReplicaServer) UnicastRemoteObject.exportObject(replica, 0);
 
