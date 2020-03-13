@@ -26,8 +26,7 @@ public abstract class Client implements RemoteFunctionality {
         } catch (ConnectException e) {
             System.out.println("Couldn't connect to JustHungry, try again later");
         } catch (Exception e) {
-            System.err.println("Client exception: " + e.toString());
-            e.printStackTrace();
+            System.err.println("Client failed unexpectedly, try reopening JustHungry");
         }
 
     }

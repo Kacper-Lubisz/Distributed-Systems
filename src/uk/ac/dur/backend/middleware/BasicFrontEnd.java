@@ -70,17 +70,19 @@ public class BasicFrontEnd implements FrontEndFunctionality, Serializable {
 
     @Override
     public void registerReplica(ReplicaServer newReplica, String id) throws RemoteException {
-        replicas.add(newReplica);
-        System.out.println("New replica connected, id:" + id);
+        synchronized (this) {
+            replicas.add(newReplica);
+            System.out.println("New replica connected, id:" + id);
 
-        if (replicas.size() == 1) {
-            promoteToMaster(newReplica);
-            newReplica.updateState(getDefaultState());
-        } else {
-            try {
-                master.addSlaveReplica(newReplica);
-            } catch (RemoteException | NullPointerException e) {
-                findNewMaster();
+            if (replicas.size() == 1) {
+                promoteToMaster(newReplica);
+                newReplica.updateState(getDefaultState());
+            } else {
+                try {
+                    master.addSlaveReplica(newReplica);
+                } catch (RemoteException | NullPointerException e) {
+                    findNewMaster();
+                }
             }
         }
 
@@ -119,38 +121,40 @@ public class BasicFrontEnd implements FrontEndFunctionality, Serializable {
      * @throws RemoteException if a master can't be found
      */
     private ReplicaServer findNewMaster() throws RemoteException {
-        System.out.println("Looking for a new master");
+        synchronized (this) {
+            System.out.println("Looking for a new master");
 
-        master = null;
+            master = null;
 
-        List<ReplicaServer> newReplicas = replicas.stream().filter(replica -> {
-            try {
-                // this ensures that all replicas are still alive. this costs one 'network delay' but prevents chaining
-                // of delays when several replicas go down between
-                replica.ping();
-                return true;
-            } catch (RemoteException e) {
-                return false;
+            List<ReplicaServer> newReplicas = replicas.stream().filter(replica -> {
+                try {
+                    // this ensures that all replicas are still alive. this costs one 'network delay' but prevents chaining
+                    // of delays when several replicas go down between
+                    replica.ping();
+                    return true;
+                } catch (RemoteException e) {
+                    return false;
+                }
+            }).dropWhile((possibleMaster) -> {
+                try {
+                    this.promoteToMaster(possibleMaster);
+                    return false;
+                } catch (RemoteException e) {
+                    // if a replica can't be promoted then it must have a critical failure and be removed
+                    return true;
+                }
+            }).collect(Collectors.toList());
+
+            // here the middleware should spin up more replicas, if this were deployed in a containerised fashion, then this
+            // would be more feasible right now
+            // As a work around I could do something like, but that wouldn't be a nice solution
+            // Runtime.getRuntime().exec("./spinUpReplica.sh")
+
+            if (newReplicas.size() == 0) {
+                throw new RemoteException("Request Failed, no replicas available");
+            } else {
+                return master;
             }
-        }).dropWhile((possibleMaster) -> {
-            try {
-                this.promoteToMaster(possibleMaster);
-                return false;
-            } catch (RemoteException e) {
-                // if a replica can't be promoted then it must have a critical failure and be removed
-                return true;
-            }
-        }).collect(Collectors.toList());
-
-        // here the middleware should spin up more replicas, if this were deployed in a containerised fashion, then this
-        // would be more feasible right now
-        // As a work around I could do something like, but that wouldn't be a nice solution
-        // Runtime.getRuntime().exec("./spinUpReplica.sh")
-
-        if (newReplicas.size() == 0) {
-            throw new RemoteException("Request Failed, no replicas available");
-        } else {
-            return master;
         }
     }
 

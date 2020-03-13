@@ -55,7 +55,7 @@ public class BasicReplicaServer implements ReplicaServer {
 
     private void attemptError() throws RemoteException {
         if (random.nextDouble() < this.errorRate) {
-            RemoteException testingException = new RemoteException("Just testing the system");
+            RemoteException testingException = new RemoteException("Randomly thrown error thrown");
             System.out.println("Throwing random exception");
             throw testingException;
         }
@@ -64,44 +64,27 @@ public class BasicReplicaServer implements ReplicaServer {
 
     @Override
     public void promoteToMaster(List<ReplicaServer> slaves) throws RemoteException {
-        try {
-            System.out.println("Server is now master");
-            attemptError();
-
-            this.master = null;
-            this.slaves = slaves;
-        } catch (RemoteException e) {
-            errorRoutine(e);
-        }
+        System.out.println("Server is now master");
+        this.master = null;
+        this.slaves = slaves;
     }
 
     @Override
     public void addSlaveReplica(ReplicaServer slave) throws RemoteException {
-        try {
-            attemptError();
 
-            // without much more effort a hierarchical model of state propagation could be implemented if this check
-            // were removed
-            if (master != null) {
-                throw new RemoteException("Can't add a slave to a replica which isn't master");
-            }
-            slaves.add(slave);
-            slave.updateState(state);
-        } catch (RemoteException e) {
-            errorRoutine(e);
+        // without much more effort a hierarchical model of state propagation could be implemented if this check
+        // were removed
+        if (master != null) {
+            throw new RemoteException("Can't add a slave to a replica which isn't master");
         }
+        slaves.add(slave);
+        slave.updateState(state);
     }
 
     @Override
     public void updateState(RestaurantServerState state) throws RemoteException {
-        try {
-            attemptError();
-
-            System.out.println("Received state update");
-            this.state = state;
-        } catch (RemoteException e) {
-            errorRoutine(e);
-        }
+        System.out.println("Received state update");
+        this.state = state;
     }
 
     /**

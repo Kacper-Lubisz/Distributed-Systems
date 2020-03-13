@@ -17,7 +17,8 @@ echo "Starting 10 Replicas"
 
 for I in {1..10}; do
 
-  java -cp "./out:./lib/*" uk.ac.dur.backend.middleware.RestaurantServerState .5 > "./log/replica${I}.txt" &
+  java -cp "./out:./lib/*" uk.ac.dur.backend.middleware.RestaurantServerState 0 > "./log/replica${I}.txt" &
+  #java -cp "./out:./lib/*" uk.ac.dur.backend.middleware.RestaurantServerState .2 > "./log/replica${I}.txt" &
 
 done
 echo "Done"

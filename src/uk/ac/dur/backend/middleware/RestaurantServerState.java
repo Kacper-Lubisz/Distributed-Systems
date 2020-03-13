@@ -42,9 +42,9 @@ public final class RestaurantServerState implements Serializable {
             InternalFrontEndFunctionality middlewareStub = (InternalFrontEndFunctionality) registry.lookup("frontend");
 
             double errorRate = 0;
-            if (args.length == 2) {
+            if (args.length == 1) {
                 try {
-                    errorRate = Double.parseDouble(args[1]);
+                    errorRate = Double.parseDouble(args[0]);
                 } catch (NumberFormatException e) {
                     System.err.println("Invalid error rate argument");
                     System.exit(1);
@@ -53,11 +53,12 @@ public final class RestaurantServerState implements Serializable {
                 errorRate = 0.0;
             }
 
+            errorRate = 0.1;
 
             ReplicaServer replica = new BasicReplicaServer(errorRate);
             ReplicaServer replicaStub = (ReplicaServer) UnicastRemoteObject.exportObject(replica, 0);
 
-            System.out.println("Starting new replica server, with error rate:" + errorRate);
+            System.out.println("Starting new replica server, id: " + replica.getID() + " error rate:" + errorRate);
 
             middlewareStub.registerReplica(replicaStub, replica.getID());
 
